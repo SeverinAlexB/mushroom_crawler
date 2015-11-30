@@ -55,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Images
+downloaded_images/
+.idea/
+*.png
+*.jpg
