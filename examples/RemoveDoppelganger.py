@@ -7,6 +7,7 @@ categories = glob.glob(target_folder + "*")
 
 folder_list = []
 for cat in categories:
+    print cat
     folder_list.append(cat + "/")
 
 remover = DoppelgangerRemover.from_folder_list(folder_list)

@@ -32,8 +32,8 @@ class GoogleImageExtractor(object):
         self.prefix_of_search_url = "https://www.google.com.sg/search?q="
         self.postfix_of_search_url = '&source=lnms&tbm=isch&sa=X&ei=0eZEVbj3IJG5uATalICQAQ&ved=0CAcQ_AUoAQ&biw=939&bih=591'# non changable text
         self.target_url_str = ''
-
         self.pic_url_list = []
+        self.nb_threads = 30
 
 
     def formed_search_url(self):
@@ -55,8 +55,7 @@ class GoogleImageExtractor(object):
             self.temp_page_source = driver.page_source
             driver.find_element_by_id('smb').click() #ok
 
-            nb_scroll = ((self.nb_images - 400) / 120) + 1
-            print "scrolls " + str(nb_scroll)
+            nb_scroll = 3
             for i in range(nb_scroll):
                 time.sleep(delay)
                 driver.execute_script("window.scrollTo(0, 60000)")
@@ -109,7 +108,7 @@ class GoogleImageExtractor(object):
         self.run_async(download_list)
 
     def run_async(self, downloadlist):
-        pool = mp.Pool(processes=20)
+        pool = mp.Pool(processes=self.nb_threads)
         pool.map(_download_single_image, downloadlist)
         pool.close()
         pool.join()

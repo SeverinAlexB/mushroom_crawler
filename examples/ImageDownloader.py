@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from src.GoogleImageExtractor import GoogleImageExtractor
 
-keyword = u"Eierschwämme Wald"
+keyword = u"лисички лес"
 target_folder = 'downloaded_images/' + keyword + "/"
 nb_images = 1000
 
