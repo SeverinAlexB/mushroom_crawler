@@ -27,10 +27,11 @@ class GoogleImageExtractor(object):
         self.formated_keyword = ''
         self.target_folder = ''
         self.nb_images = 200
+        self.image_size = (300,300)
  
         ## url construct string text
         self.prefix_of_search_url = "https://www.google.com.sg/search?q="
-        self.postfix_of_search_url = '&source=lnms&tbm=isch&sa=X&ei=0eZEVbj3IJG5uATalICQAQ&ved=0CAcQ_AUoAQ&biw=939&bih=591'# non changable text
+        self.postfix_of_search_url = '&source=lnms&tbm=isch&sa=X&ei=0eZEVbj3IJG5uATalICQAQ&ved=0CAcQ_AUoAQ&biw=939&bih=591&tbs=itp:photo,isz:lt,islt:qsvga'# non changable text
         self.target_url_str = ''
         self.pic_url_list = []
         self.nb_threads = 30
@@ -56,6 +57,8 @@ class GoogleImageExtractor(object):
             driver.find_element_by_id('smb').click() #ok
 
             nb_scroll = 3
+            if self.nb_images < 350:
+                nb_scroll = 0
             for i in range(nb_scroll):
                 time.sleep(delay)
                 driver.execute_script("window.scrollTo(0, 60000)")
@@ -99,7 +102,7 @@ class GoogleImageExtractor(object):
         pic_counter = 1
         for url_link in self.pic_url_list:
             pic_prefix_str = self.keyword + str(pic_counter)
-            param = (url_link.encode(), pic_prefix_str, self.target_folder)
+            param = (url_link.encode(), pic_prefix_str, self.target_folder, self.image_size)
             download_list.append(param)
             pic_counter = pic_counter +1
 
@@ -124,7 +127,7 @@ def _download_single_image(args):
         print str(e)
 
 
-def download_single_image(url_link, pic_prefix_str, target_folder):
+def download_single_image(url_link, pic_prefix_str, target_folder, image_size):
     """ Download data according to the url link given.
         Args:
             url_link (str): url str.
@@ -147,18 +150,24 @@ def download_single_image(url_link, pic_prefix_str, target_folder):
     print url_link
     try:
         response = url.download()
-        img = resize_image(response)
+        img = resize_image(response, image_size)
         img.save(temp_filename_full_path, "JPEG")
     except Exception as e:
         #if self.__print_download_fault:
         print 'Problem with processing this data: ', str(e), url_link
 
-def resize_image(response):
-        size = (300,300)
+def resize_image(response, image_size):
+        drop_threshold = 150
         buff = StringIO.StringIO(response)
         img = Image.open(buff)
-        img.thumbnail(size, Image.ANTIALIAS)
-        return img
+        img = img.convert('RGB')
+        (x,y) = img.size
+        if x < drop_threshold or y < drop_threshold:
+            raise Exception("Image to small")
+        img.thumbnail(image_size, Image.ANTIALIAS)
+        background = Image.new('RGB', image_size)
+        background.paste(img, (0,0))
+        return background
 
  
 if __name__ == '__main__':
