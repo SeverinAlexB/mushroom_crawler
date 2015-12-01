@@ -27,7 +27,7 @@ class GoogleImageExtractor(object):
         self.formated_keyword = ''
         self.target_folder = ''
         self.nb_images = 200
-        self.image_size = (300,300)
+        self.image_size = (224,224)
  
         ## url construct string text
         self.prefix_of_search_url = "https://www.google.com.sg/search?q="
