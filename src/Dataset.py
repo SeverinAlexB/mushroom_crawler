@@ -2,7 +2,7 @@ from PIL import Image
 import numpy as np
 import glob
 from random import shuffle
-
+import gc
 
 class Dataset:
     def __init__(self):
@@ -56,6 +56,7 @@ class Dataset:
         inputs = []
         responses = []
         for sample in self.samples_shuffled:
+            sample.load_image()
             inputs.append(sample.numpy_array)
             responses.append(sample.tag)
 
@@ -93,7 +94,7 @@ class Categorie:
     def read_folder(self):
         self.samples = []
         files = glob.glob(self.sourcefolder + "*.*")
-        for file in files:
+        for file in files[:20]:
             sample = Sample.from_file(file, self.tag)
             sample.load_image()
             self.samples.append(sample)
@@ -110,7 +111,6 @@ class Categorie:
 class Sample:
     def __init__(self):
         self.filepath = None
-        self.pil_image = None
         self.tag = None
         self.numpy_array = None
 
@@ -123,8 +123,8 @@ class Sample:
         return sample
 
     def load_image(self):
-        self.pil_image = self._load_image(self.filepath)
-        self.numpy_array = self._to_numpy_array_normalized(self.pil_image)
+        img = self._load_image(self.filepath)
+        self.numpy_array = self._to_numpy_array_normalized(img)
 
     def _load_image(self, filepath):
         img = Image.open(self.filepath)
