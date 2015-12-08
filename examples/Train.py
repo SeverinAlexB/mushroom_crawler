@@ -1,35 +1,22 @@
 from __future__ import absolute_import
 from __future__ import print_function
-from src.Dataset import Dataset, CategorieInfo
-
-import numpy as np
-
+import glob
 
 from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation, Flatten
+from keras.layers.core import Dense, Dropout, Flatten
 from keras.layers.advanced_activations import PReLU
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D
-from keras.utils import np_utils
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.regularizers import l2
-from keras import callbacks
+from keras.callbacks import ModelCheckpoint
+
+from mushroom.data.Dataset import Dataset
 
 def load_dataset():
-    #load dataset
-    cat_infos = []
-
-    echte_pfifferling = CategorieInfo.from_default("Echter Pfifferling/", [1,0,0])
-    falscher_pfifferling = CategorieInfo.from_default("Falscher Pfifferling/", [0,1,0])
-    fliegenpilz = CategorieInfo.from_default("fliegenpilz/", [0,0,1])
-
-    cat_infos.append(echte_pfifferling)
-    cat_infos.append(falscher_pfifferling)
-    cat_infos.append(fliegenpilz)
-
-    dataset = Dataset.from_sourcefolder("dataset1/")
-    dataset.categorie_infos = cat_infos
+    folder = "../tests/data/testdataset/"
+    dataset = Dataset.from_sourcefolder(folder)
     dataset.read_samples()
+    dataset.samples_shuffled.load_data()
     return dataset
+
 
 
 
@@ -96,7 +83,12 @@ def VGG_16(input_shape=(224,224), nb_output=2):
     model.add(Dense(nb_output, activation='softmax', init="glorot_normal"))
     return model
 
-nb_classes = 3
+print("load dataset")
+dataset = load_dataset()
+train_data, test_data = dataset.samples_shuffled.split(0.9)
+train_x, train_y = train_data.to_input_response()
+test_x, test_y = test_data.to_input_response()
+nb_classes = len(dataset.categories)
 
 # input image dimensions
 input_shape = (224, 224)
@@ -107,11 +99,8 @@ model = VGG_16(input_shape, nb_classes)
 print("start compiling")
 model.compile(loss='categorical_crossentropy', optimizer='adadelta')
 
-print("load dataset")
-dataset = load_dataset()
-train_data, test_data = dataset.split_train_test(0.9)
-train_x, train_y = train_data.to_input_response()
-test_x, test_y = test_data.to_input_response()
+
+
 print("trainset len " + str(len(train_data.samples_shuffled)))
 print("testset len " + str(len(test_data.samples_shuffled)))
 print("input shape " + str(train_x.shape))

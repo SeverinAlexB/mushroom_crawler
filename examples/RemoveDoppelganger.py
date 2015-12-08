@@ -1,5 +1,5 @@
 import glob
-from src.DoppengangerRemover import DoppelgangerRemover
+from mushroom.DoppengangerRemover import DoppelgangerRemover
 
 target_folder = 'downloaded_images/'
 

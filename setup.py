@@ -8,7 +8,7 @@ setup(
     license = "MIT",
     keywords = "crosswalk detection",
     url = "https://github.com/geometalab/OSM-Crosswalk-Detection",
-    packages=['src'],
+    packages=['mushroom'],
     install_requires = [],
     classifiers = [],
 )

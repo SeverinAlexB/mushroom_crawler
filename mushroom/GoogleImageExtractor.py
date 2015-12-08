@@ -54,15 +54,17 @@ class GoogleImageExtractor(object):
             driver.execute_script("window.scrollTo(0, 30000)")
             time.sleep(delay)
             self.temp_page_source = driver.page_source
-            driver.find_element_by_id('smb').click() #ok
+            try:
+                driver.find_element_by_id('smb').click() #ok
 
-            nb_scroll = 3
-            if self.nb_images < 350:
-                nb_scroll = 0
-            for i in range(nb_scroll):
-                time.sleep(delay)
-                driver.execute_script("window.scrollTo(0, 60000)")
-
+                nb_scroll = 3
+                if self.nb_images < 350:
+                    nb_scroll = 0
+                for i in range(nb_scroll):
+                    time.sleep(delay)
+                    driver.execute_script("window.scrollTo(0, 60000)")
+            except:
+                print "some curious"
  
         except:
             print 'not able to find'
