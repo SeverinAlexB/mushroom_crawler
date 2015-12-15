@@ -3,6 +3,8 @@ from keras.layers.core import Dense, Flatten
 from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2D, AveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.layers.advanced_activations import PReLU
+import sys
+sys.setrecursionlimit(10000)
 
 def activation():
     return PReLU()
@@ -12,13 +14,27 @@ def cinput_shape(graph):
     shape.pop(0)
     return shape
 
+def ConvB(input_shape, nb_filter, nb_row, nb_col, subsample=(1, 1)):
+    g = Graph()
+    g.add_input("input", input_shape)
+    g.add_node(Convolution2D(nb_filter,nb_row,nb_col,subsample=subsample),"conv1", "input")
+    g.add_node(BatchNormalization(),"bn", "conv1")
+    g.add_node(activation(),"activ", "bn")
+    g.add_output("output", "activ")
+    return g
+
+def Zero(input_shape, pad=(1,1)):
+    g = Graph()
+    g.add_input("input", input_shape)
+    g.add_node(ZeroPadding2D(pad),"zero","input")
+    g.add_output("output", "zero")
+    return g
+
 def convo1(input_shape):
     g = Graph()
     g.add_input("input", input_shape)
-    g.add_node(Convolution2D(64, 7, 7, subsample=(2, 2)),"conv1", "input")
-    g.add_node(BatchNormalization(),"bn", "conv1")
-    g.add_node(activation(),"activ", "bn")
-    g.add_node(MaxPooling2D((3, 3),strides=(2, 2)), "maxpool","activ")
+    g.add_node(ConvB(input_shape,64,7,7, subsample=(2, 2)),"conv1", "input")
+    g.add_node(MaxPooling2D((3, 3),strides=(2, 2)), "maxpool","conv1")
     g.add_output("output", "maxpool")
     return g
 
@@ -53,33 +69,35 @@ def time_block3(input_shape, nb_filter1, nb_filter2, nb_blocks, has_edge):
     return g
 
 def block3(input_shape, nb_filter1, nb_filter2, is_edge):
+
+    zerop = (1,1)
+    subsample = (1,1)
+
+    if is_edge:
+        zerop = (2,2)
+        subsample = (2,2)
+
     g = Graph()
     g.add_input("input",input_shape)
 
-    if is_edge:
-        g.add_node(ZeroPadding2D((2,2)),"zero","input")
-        g.add_node(Convolution2D(nb_filter1, 1, 1, subsample=(2,2)), "conv1", "zero")
-    else:
-        g.add_node(ZeroPadding2D((1,1)),"zero","input")
-        g.add_node(Convolution2D(nb_filter1, 1, 1), "conv1", "zero")
-    g.add_node(BatchNormalization(),"bn1", "conv1")
-    g.add_node(activation(),"activ1", "bn1")
-    g.add_node(Convolution2D(nb_filter1, 3, 3), "conv2", "activ1")
-    g.add_node(BatchNormalization(),"bn2", "conv2")
-    g.add_node(activation(),"activ2", "bn2")
-    g.add_node(Convolution2D(nb_filter2, 1, 1), "conv3", "activ2")
-    g.add_node(BatchNormalization(),"bn3", "conv3")
-    g.add_node(activation(),"activ3", "bn3")
-    if is_edge:
-        g.add_node(Convolution2D(nb_filter2, 1, 1, subsample=(2,2)), "shortcut", "input")
-    else:
-        g.add_node(Convolution2D(nb_filter2, 1, 1), "shortcut", "input")
-    g.add_output("output", inputs=["activ3", "shortcut"], merge_mode="sum")
+    zero = Zero(input_shape,zerop)
+    conv1 = ConvB(cinput_shape(zero),nb_filter1,1,1,subsample=subsample)
+    conv2 = ConvB(cinput_shape(conv1), nb_filter1, 3, 3)
+    conv3 = ConvB(cinput_shape(conv2), nb_filter2, 1,1)
+    shortcut = ConvB(input_shape,nb_filter2,1,1,subsample=subsample)
+
+    g.add_node(zero,"zero","input")
+    g.add_node(conv1,"conv1","zero")
+    g.add_node(conv2,"conv2","conv1")
+    g.add_node(conv3,"conv3","conv2")
+    g.add_node(shortcut,"shortcut","input")
+    g.add_output("output", inputs=["conv3", "shortcut"], merge_mode="sum")
 
     return g
 
 def get_model(input_shape, nb_conv2, nb_conv3, nb_conv4, nb_conv5, nb_outputs):
     conv1 = convo1(input_shape)
+
     conv2 = time_block3(cinput_shape(conv1), 64, 256, nb_conv2, False)
     conv3 = time_block3(cinput_shape(conv2), 128, 512, nb_conv3, True)
     conv4 = time_block3(cinput_shape(conv3), 256, 1024, nb_conv4, True)
@@ -89,17 +107,34 @@ def get_model(input_shape, nb_conv2, nb_conv3, nb_conv4, nb_conv5, nb_outputs):
     g = Graph()
     g.add_input("input",input_shape)
     g.add_node(conv1, "conv1", "input")
+
     g.add_node(conv2, "conv2", "conv1")
     g.add_node(conv3, "conv3", "conv2")
     g.add_node(conv4, "conv4", "conv3")
     g.add_node(conv5, "conv5", "conv4")
     g.add_node(last, "avgfc", "conv5")
-    g.add_output("output", "avgfc")
+
+    g.add_output("output", "conv1")
 
     return g
 
+
+def create_50_layer(input_shape, nb_outputs):
+    print "create model"
+    return get_model(input_shape, 3, 4, 6, 3, nb_outputs)
+
+def create_101_layer(input_shape, nb_outputs):
+    print "Create model. This could take some time..."
+    return get_model(input_shape, 3, 4, 23, 3, nb_outputs)
+
+def create_150_layer(input_shape, nb_outputs):
+    print "Create model. This could take some time..."
+    return get_model(input_shape, 3, 8, 36, 3, nb_outputs)
+
+
 input_shape = (3,244,244)
-model = get_model(input_shape, 2, 2, 2, 2, 2)
+
+model = create_50_layer(input_shape, 3)
 for n in model.nodes:
     node = model.nodes[n]
     print n + str( node.output_shape)
