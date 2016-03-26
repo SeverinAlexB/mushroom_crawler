@@ -114,7 +114,7 @@ def get_model(input_shape, nb_conv2, nb_conv3, nb_conv4, nb_conv5, nb_outputs):
     g.add_node(conv5, "conv5", "conv4")
     g.add_node(last, "avgfc", "conv5")
 
-    g.add_output("output", "conv1")
+    g.add_output("output", "avgfc")
 
     return g
 
